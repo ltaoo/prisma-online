@@ -24,13 +24,17 @@ window.MonacoEnvironment = {
 
 async function fetchFiles() {
   try {
-    const r = await axios.get<
-      {
-        filepath: string;
-        content: string;
-      }[]
-    >("/api/v2/devtools/prisma_client");
-    return r.data;
+    const r = await axios.get<{
+      code: number;
+      msg: string;
+      data: {
+        files: {
+          filepath: string;
+          content: string;
+        }[];
+      };
+    }>("/api/v2/devtools/prisma_client");
+    return r.data.data.files;
   } catch (err) {
     return [];
   }
@@ -90,11 +94,20 @@ const TestPage = () => {
       const files = await fetchFiles();
       for (let i = 0; i < files.length; i += 1) {
         const { filepath, content } = files[i];
+        const uri = filepath
+          .replace(/^[-_/a-zA-Z]{1,}\/node_modules/, "")
+          .replace("@prisma", "_prisma");
+        console.log(uri);
+        monaco.editor.createModel(
+          content.replace("@prisma", "/_prisma"),
+          "typescript",
+          monaco.Uri.parse(`file://${uri}`)
+        );
       }
       const model4 = monaco.editor.createModel(
-        "import { PrismaClient } from './types/prisma-client';\n\nexport const client = new PrismaClient();",
+        "import { PrismaClient } from './.prisma/client';\n\nexport const client = new PrismaClient();",
         "typescript",
-        monaco.Uri.parse("file:///path/to/client.d.ts")
+        monaco.Uri.parse("file:///client.d.ts")
       );
     })();
     // const prismaDeclaration = `export class PrismaClient {
@@ -129,7 +142,7 @@ const data = await client.user.findFirst({
 console.log(data);
 `,
       "typescript",
-      monaco.Uri.parse("file:///path/to/a.ts")
+      monaco.Uri.parse("file:///index.ts")
     );
 
     // 创建 B 文件的模型 BModel
