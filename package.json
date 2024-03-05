@@ -6,7 +6,7 @@
     "build:fe": "tsc && vite build",
     "build:server": "node scripts/build.js",
     "preview": "vite preview --port 3001",
-    "prepare": "node scripts/prepublish.js",
+    "prepublishOnly": "node scripts/prepublish.js",
     "postpublish": "node scripts/postpublish.js"
   },
   "bin": "output/app.js",
@@ -19,5 +19,34 @@
   "files": [
     "output",
     "package.json"
-  ]
+  ],
+  "dependencies": {
+    "axios": "^1.5.0",
+    "classnames": "^2.3.1",
+    "commander": "10.0.0",
+    "express": "^4.18.3",
+    "lodash": "^4.17.21",
+    "mitt": "^3.0.1",
+    "monaco-editor": "0.34.1",
+    "monaco-vim": "^0.4.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "react-resizable-panels": "^2.0.12",
+    "react-router-dom": "6",
+    "resolve": "^1.22.8"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.202",
+    "@types/express": "^4.17.21",
+    "@types/node": "^17.0.23",
+    "@types/qs": "^6.9.7",
+    "@types/react": "^17.0.33",
+    "@types/react-dom": "^17.0.10",
+    "@vitejs/plugin-react": "^1.0.7",
+    "typescript": "^4.4.4",
+    "vite": "^2.7.2",
+    "vite-plugin-windicss": "^1.8.3",
+    "vitest": "^0.27.0",
+    "windicss": "^3.5.1"
+  }
 }

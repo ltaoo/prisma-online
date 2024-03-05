@@ -1,105 +1,23 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useCallback, useRef, useState } from "react";
 import axios from "axios";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
-// import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.js";
 import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js";
-
-// import "monaco-editor/esm/vs/basic-languages/abap/abap.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/apex/apex.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/azcli/azcli.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/bat/bat.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/bicep/bicep.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/cameligo/cameligo.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/clojure/clojure.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/coffee/coffee.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/csharp/csharp.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/csp/csp.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/css/css.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/cypher/cypher.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/dart/dart.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/dockerfile/dockerfile.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/ecl/ecl.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/elixir/elixir.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/flow9/flow9.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/fsharp/fsharp.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/freemarker2/freemarker2.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/go/go.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/graphql/graphql.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/handlebars/handlebars.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/hcl/hcl.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/html/html.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/ini/ini.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/java/java.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/julia/julia.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/kotlin/kotlin.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/less/less.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/lexon/lexon.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/lua/lua.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/liquid/liquid.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/m3/m3.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/markdown/markdown.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/mips/mips.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/msdax/msdax.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/mysql/mysql.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/objective-c/objective-c.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/pascal/pascal.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/pascaligo/pascaligo.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/perl/perl.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/pgsql/pgsql.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/php/php.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/pla/pla.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/postiats/postiats.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/powerquery/powerquery.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/powershell/powershell.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/protobuf/protobuf.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/pug/pug.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/python/python.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/qsharp/qsharp.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/r/r.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/razor/razor.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/redis/redis.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/redshift/redshift.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/restructuredtext/restructuredtext.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/ruby/ruby.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/rust/rust.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/sb/sb.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/scala/scala.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/scheme/scheme.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/scss/scss.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/shell/shell.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/solidity/solidity.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/sophia/sophia.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/sparql/sparql.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/sql/sql.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/st/st.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/swift/swift.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/systemverilog/systemverilog.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/tcl/tcl.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/twig/twig.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/vb/vb.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/xml/xml.contribution.js";
-// import "monaco-editor/esm/vs/basic-languages/yaml/yaml.contribution.js";
-
-// import "monaco-editor/esm/vs/basic-languages/monaco.contribution";
-
 import "monaco-editor/esm/vs/language/css/monaco.contribution";
 import "monaco-editor/esm/vs/language/html/monaco.contribution";
 import "monaco-editor/esm/vs/language/json/monaco.contribution";
 import "monaco-editor/esm/vs/language/typescript/monaco.contribution";
-
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 // @ts-ignore
 import { languages } from "monaco-editor/esm/vs/editor/edcore.main";
-// @ts-ignore
-import * as vim from "monaco-vim";
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
 // import typescript from "monaco-editor/esm/vs/language/typescript/tsWorker?worker";
 import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
+// @ts-ignore
+import * as vim from "monaco-vim";
+
+import { ViewComponent } from "@/store/types";
 
 window.MonacoEnvironment = {
   // @ts-ignore
@@ -153,12 +71,28 @@ async function execPrismaCode(code: string) {
   }
 }
 
-const HomePage = () => {
+const HomePage: ViewComponent = (props) => {
+  const { storage } = props;
+
   const ref = useRef(null);
   const editorRef = useRef<null | monaco.editor.IStandaloneCodeEditor>(null);
   const vimModeRef = useRef<null | { dispose: () => void }>(null);
   const vimStatusRef = useRef<HTMLDivElement | null>(null);
+  const [vimChecked, setVimChecked] = useState(storage.get("settings").vim);
   const [logs, setLogs] = useState<unknown[]>([]);
+
+  const execCode = useCallback(async (code) => {
+    const cleanContent = code.replace(
+      /import { client } from '\.\/client';/,
+      ""
+    );
+    const r = await execPrismaCode(cleanContent);
+    setLogs(
+      r.data.map((d) => {
+        return JSON.stringify(d, null, 2);
+      })
+    );
+  }, []);
 
   useEffect(() => {
     if (ref.current === null) {
@@ -191,7 +125,7 @@ const HomePage = () => {
       monaco.editor.createModel(
         "import { PrismaClient } from './.prisma/client';\n\nexport const client = new PrismaClient();",
         "typescript",
-        monaco.Uri.parse("file:///client.d.ts")
+        monaco.Uri.parse("file:///client.ts")
       );
     })();
     const editor = monaco.editor.create(ref.current, {
@@ -203,9 +137,17 @@ const HomePage = () => {
         enabled: false,
       },
     });
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+      const content = editor.getValue();
+      editor.getAction("editor.action.formatDocument").run();
+      execCode(content);
+      storage.set("content", content);
+    });
     editorRef.current = editor;
+    const content = storage.get("content");
     const main = monaco.editor.createModel(
-      `import { client } from './client';
+      content ||
+        `import { client } from './client';
 
 // 执行任意语句
 const data = await client.user.findFirst({
@@ -221,26 +163,42 @@ console.log({ text: 'hello prisma' });
     );
     editor.setModel(main);
     setTimeout(() => {
+      const settings = storage.get("settings");
+      if (settings.vim && vimStatusRef.current) {
+        vimModeRef.current = vim.initVimMode(editor, vimStatusRef.current);
+      }
       editor.getAction("editor.action.formatDocument").run();
     }, 1200);
   }, []);
+
+  console.log("render", vimChecked);
+
   return (
     <PanelGroup direction="horizontal" id="group" className="">
       <Panel id="left-panel" className="relative">
         <div className="flex items-center p-2">
           <input
             type="checkbox"
+            checked={vimChecked}
             onChange={(event) => {
+              console.log(event.target.checked);
+              setVimChecked(event.target.checked);
               if (event.target.checked) {
                 if (!vimModeRef.current) {
                   vimModeRef.current = vim.initVimMode(
                     editorRef.current,
                     vimStatusRef.current
                   );
+                  storage.merge("settings", {
+                    vim: true,
+                  });
                   return;
                 }
                 return;
               }
+              storage.merge("settings", {
+                vim: false,
+              });
               if (vimModeRef.current) {
                 // @ts-ignore
                 vimModeRef.current.dispose();
@@ -262,16 +220,7 @@ console.log({ text: 'hello prisma' });
               return;
             }
             const content = editor.getValue();
-            const cleanContent = content.replace(
-              /import { client } from '\.\/client';/,
-              ""
-            );
-            const r = await execPrismaCode(cleanContent);
-            setLogs(
-              r.data.map((d) => {
-                return JSON.stringify(d, null, 2);
-              })
-            );
+            execCode(content);
           }}
         >
           执行

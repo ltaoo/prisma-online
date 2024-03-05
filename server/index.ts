@@ -65,18 +65,26 @@ function main() {
   app.post("/api/v1/devtools/prisma/exec", async (req, res) => {
     const code = req.body.code;
     const result: unknown[] = [];
+    const errors: unknown[] = [];
     const context = {
       console: {
         log: (...args: unknown[]) => {
           result.push(...args);
         },
       },
+      on_error: (err: Error) => {
+        errors.push(err.message);
+      },
       client,
     };
     const sandbox = vm.createContext(context);
     await vm.runInNewContext(
       `(async () => {
+        try {
 ${code}
+        } catch (err) {
+on_error(err);
+        }
 })();`,
       sandbox
     );
