@@ -1,6 +1,9 @@
 node_modules
 .DS_Store
 dist
+output
 dist-ssr
 *.local
 *.log
+
+*.tgz

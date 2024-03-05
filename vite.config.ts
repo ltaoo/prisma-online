@@ -7,12 +7,12 @@ import windiCSS from "vite-plugin-windicss";
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react(), windiCSS()],
+  build: {
+    outDir: "output/dist",
+  },
   resolve: {
     alias: {
-      "@list/core": path.resolve(__dirname, "./src/domains/list/core/src"),
-      "@list/hook": path.resolve(__dirname, "./src/domains/list/hook/src"),
       "@": path.resolve(__dirname, "./src"),
-      util: "tapable/lib/util-browser.js",
     },
   },
 });

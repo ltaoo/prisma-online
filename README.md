@@ -1,17 +1,19 @@
-# My Tools
+# Prisma Online
 
-一些常用的工具集。
+![管理后台首页](assets/example1.png)
 
-## JavaScript Repl
+在线执行 `prisma` 代码，支持类型提示！
 
-执行一些 `js` 片段。
+## Usage
 
-![JavaScript Repl](https://static.ltaoo.work/js-repl.gif)
+```bash
+yarn add prisma-online
 
-## 正则测试
+yarn prisma-online --port 8001
+```
 
-执行正则表达式.
+### special db file
 
-## Dayjs 测试
-
-时间戳查看。
+```bash
+yarn prisma-online --port 8001 --db <url_of_db_file>
+```
