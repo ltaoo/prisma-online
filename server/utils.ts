@@ -2,16 +2,22 @@ import fs from "fs/promises";
 import path from "path";
 
 import resolve from "resolve/sync";
+import factory from "debug";
 
 import { PrismaClientTypeEntryName } from "./constants";
 
+const debug = factory("utils");
+
 export function validate_prisma_client() {
-  //   const filepath = path.resolve(process.cwd(), PrismaClientTypeEntryName);
   try {
-    const PrismaClient = require("@prisma/client").PrismaClient;
-    if (typeof PrismaClient !== "function") {
-      return Result.Err("@prisma/client 模块内容错误");
-    }
+    // const filepath = path.resolve(process.cwd(), PrismaClientTypeEntryName);
+    // await fs.stat(filepath);
+    const PrismaClient = require.resolve("@prisma/client", {
+      paths: [process.cwd(), path.resolve(process.cwd(), "node_modules")],
+    });
+    // if (typeof PrismaClient !== "function") {
+    //   return Result.Err("@prisma/client 模块内容错误");
+    // }
     return Result.Ok(null);
   } catch (err) {
     return Result.Err(
@@ -26,6 +32,7 @@ type Mod = {
   imports: Mod[];
 };
 export async function load_file(filepath: string) {
+  debug("load_file", filepath);
   try {
     const file_content = await fs.readFile(filepath, "utf-8");
     const regexp = /from ['"]([^'"]{1,})['"];{0,1}/g;
@@ -51,10 +58,10 @@ export async function load_file(filepath: string) {
           if (s.endsWith(".d.ts")) {
             return s;
           }
-          return [s, "d.ts"].join(".");
+          return s;
         })();
         const file = (() => {
-          if (module_path.match(/^\./)) {
+          if (module_path.match(/^\.[^a-zA-Z]/)) {
             return {
               // 相对路径
               type: 1,
@@ -74,26 +81,74 @@ export async function load_file(filepath: string) {
             filepath: module_path,
           };
         })();
-        // console.log("load_file", file);
+        debug("imported file is", file.filepath, file.type);
         if (file.type === 1) {
           const basedir = path.parse(filepath).dir;
-          const filepath2 = resolve(file.filepath, {
-            basedir,
-          });
+          const maybe_filenames = (() => {
+            if (file.filepath.endsWith(".d.ts")) {
+              return [file.filepath];
+            }
+            return ["/index.d.ts", ".d.ts"].map((suffix) => {
+              return [file.filepath, suffix].join("");
+            });
+          })();
+          const matched = await (async () => {
+            for (let i = 0; i < maybe_filenames.length; i += 1) {
+              const filename = maybe_filenames[i];
+              // debug("test filename is existing", filename);
+              try {
+                const filepath = resolve(filename, {
+                  basedir,
+                });
+                await fs.stat(filepath);
+                return filepath;
+              } catch (err) {}
+            }
+          })();
+          if (!matched) {
+            debug("[ERROR]find file failed", file.filepath);
+            return;
+          }
           // console.log("1", filepath, file.filepath, basedir, filepath2);
-          const r = await load_file(filepath2);
+          const r = await load_file(matched);
           if (r.error) {
+            debug("[ERROR]load file failed, because", r.error.message);
             return;
           }
           entry.imports.push(r.data);
           return;
         }
         if (file.type === 3) {
-          const filepath2 = resolve(file.filepath, {
-            basedir: path.resolve(process.cwd(), "node_modules"),
-          });
-          const r = await load_file(filepath2);
+          // debug("before resolve import file", file.filepath);
+          const maybe_filenames = (() => {
+            if (file.filepath.endsWith(".d.ts")) {
+              return [file.filepath];
+            }
+            return ["/index.d.ts", ".d.ts"].map((suffix) => {
+              return [file.filepath, suffix].join("");
+            });
+          })();
+          const matched = await (async () => {
+            for (let i = 0; i < maybe_filenames.length; i += 1) {
+              const filename = maybe_filenames[i];
+              // debug("test filename is existing", filename);
+              try {
+                const filepath = resolve(filename, {
+                  basedir: path.resolve(process.cwd(), "node_modules"),
+                });
+                await fs.stat(filepath);
+                return filepath;
+              } catch (err) {}
+            }
+          })();
+          if (!matched) {
+            debug("[ERROR]find file failed", file.filepath);
+            return;
+          }
+          // debug("import file", matched);
+          const r = await load_file(matched);
           if (r.error) {
+            debug("[ERROR]load_file failed, because", r.error.message);
             return;
           }
           entry.imports.push(r.data);

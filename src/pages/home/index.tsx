@@ -1,5 +1,5 @@
 import { useEffect, useCallback, useRef, useState } from "react";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution.js";
 import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution.js";
@@ -18,6 +18,8 @@ import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
 import * as vim from "monaco-vim";
 
 import { ViewComponent } from "@/store/types";
+import { Spin } from "@/components/spin";
+import { Result } from "@/utils";
 
 window.MonacoEnvironment = {
   // @ts-ignore
@@ -61,13 +63,13 @@ async function execPrismaCode(code: string) {
     }>("/api/v1/devtools/prisma/exec", {
       code,
     });
-    return r.data;
+    if (r.data.code !== 0) {
+      return Result.Err(r.data.msg, r.data.code);
+    }
+    return Result.Ok(r.data.data);
   } catch (err) {
-    return {
-      code: 0,
-      msg: "",
-      data: [],
-    };
+    const e = err as AxiosError;
+    return Result.Err(e.message);
   }
 }
 
@@ -80,13 +82,24 @@ const HomePage: ViewComponent = (props) => {
   const vimStatusRef = useRef<HTMLDivElement | null>(null);
   const [vimChecked, setVimChecked] = useState(storage.get("settings").vim);
   const [logs, setLogs] = useState<unknown[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [errorText, setErrorText] = useState("");
+  const [errorDialogOpen, setErrorDialogOpen] = useState(false);
 
   const execCode = useCallback(async (code) => {
     const cleanContent = code.replace(
       /import { client } from '\.\/client';/,
       ""
     );
+    setLoading(true);
     const r = await execPrismaCode(cleanContent);
+    setLoading(false);
+    if (r.error) {
+      // alert(r.error.message);
+      setErrorText(r.error.message);
+      setErrorDialogOpen(true);
+      return;
+    }
     setLogs(
       r.data.map((d) => {
         return JSON.stringify(d, null, 2);
@@ -113,19 +126,20 @@ const HomePage: ViewComponent = (props) => {
       const files = await fetchFiles();
       for (let i = 0; i < files.length; i += 1) {
         const { filepath, content } = files[i];
-        const uri = filepath
-          .replace(/^[-_/a-zA-Z]{1,}\/node_modules/, "")
-          .replace("@prisma", "_prisma");
-        monaco.editor.createModel(
-          content.replace("@prisma", "/_prisma"),
-          "typescript",
-          monaco.Uri.parse(`file://${uri}`)
+        const uri = filepath;
+        monaco.languages.typescript.typescriptDefaults.addExtraLib(
+          content,
+          `file:///node_modules/${uri}`
         );
       }
+      // monaco.languages.typescript.typescriptDefaults.addExtraLib(
+      //   "export * from '.prisma/client'",
+      //   "file:///node_modules/@prisma/client/index.d.ts"
+      // );
       monaco.editor.createModel(
-        "import { PrismaClient } from './.prisma/client';\n\nexport const client = new PrismaClient();",
+        "import { PrismaClient } from '@prisma/client';\n\nexport const client = new PrismaClient();",
         "typescript",
-        monaco.Uri.parse("file:///client.ts")
+        monaco.Uri.parse(`file:///client.ts`)
       );
     })();
     const editor = monaco.editor.create(ref.current, {
@@ -174,76 +188,114 @@ console.log({ text: 'hello prisma' });
   console.log("render", vimChecked);
 
   return (
-    <PanelGroup direction="horizontal" id="group" className="">
-      <Panel id="left-panel" className="relative">
-        <div className="flex items-center p-2">
-          <input
-            type="checkbox"
-            checked={vimChecked}
-            onChange={(event) => {
-              console.log(event.target.checked);
-              setVimChecked(event.target.checked);
-              if (event.target.checked) {
-                if (!vimModeRef.current) {
-                  vimModeRef.current = vim.initVimMode(
-                    editorRef.current,
-                    vimStatusRef.current
-                  );
+    <>
+      <PanelGroup
+        direction="horizontal"
+        id="group"
+        className=""
+        onLayout={(r) => {
+          storage.set("layout", r);
+        }}
+      >
+        <Panel
+          id="left-panel"
+          className="relative"
+          defaultSize={storage.get("layout")[0]}
+        >
+          <div className="h-screen flex flex-col">
+            <div className="flex items-center h-[56px] p-2">
+              <input
+                type="checkbox"
+                checked={vimChecked}
+                onChange={(event) => {
+                  console.log(event.target.checked);
+                  setVimChecked(event.target.checked);
+                  if (event.target.checked) {
+                    if (!vimModeRef.current) {
+                      vimModeRef.current = vim.initVimMode(
+                        editorRef.current,
+                        vimStatusRef.current
+                      );
+                      storage.merge("settings", {
+                        vim: true,
+                      });
+                      return;
+                    }
+                    return;
+                  }
                   storage.merge("settings", {
-                    vim: true,
+                    vim: false,
                   });
-                  return;
-                }
+                  if (vimModeRef.current) {
+                    // @ts-ignore
+                    vimModeRef.current.dispose();
+                    vimModeRef.current = null;
+                  }
+                }}
+              />
+              <span className="ml-2">vim</span>
+              <div className="ml-8">
+                <div ref={vimStatusRef} />
+              </div>
+            </div>
+            <div ref={ref} className="flex-1"></div>
+          </div>
+          <div
+            className="btn absolute right-8 top-4"
+            onClick={async () => {
+              const editor = editorRef.current;
+              if (!editor) {
                 return;
               }
-              storage.merge("settings", {
-                vim: false,
-              });
-              if (vimModeRef.current) {
-                // @ts-ignore
-                vimModeRef.current.dispose();
-                vimModeRef.current = null;
-              }
+              const content = editor.getValue();
+              execCode(content);
             }}
-          />
-          <span className="ml-2">vim</span>
-          <div className="ml-8">
-            <div ref={vimStatusRef} />
+          >
+            执行
           </div>
-        </div>
-        <div ref={ref} style={{ height: "100vh" }}></div>
+        </Panel>
+        <PanelResizeHandle id="resize-handle" className="w-2 bg-gray-200" />
+        <Panel
+          id="right-panel"
+          className="relative h-screen"
+          defaultSize={storage.get("layout")[1]}
+        >
+          {loading ? (
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              <Spin theme="dark" />
+            </div>
+          ) : null}
+          <div
+            className="p-2 max-h-full overflow-y-auto"
+            style={{ fontSize: 16 }}
+          >
+            <div className="space-y-4">
+              {logs.map((content, i) => {
+                return (
+                  <div key={i}>
+                    <pre>{content as string}</pre>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </Panel>
+      </PanelGroup>
+      {errorDialogOpen ? (
         <div
-          className="btn absolute right-8 top-4"
-          onClick={async () => {
-            const editor = editorRef.current;
-            if (!editor) {
-              return;
-            }
-            const content = editor.getValue();
-            execCode(content);
+          className="fixed inset-0"
+          onClick={() => {
+            setErrorDialogOpen(false);
           }}
         >
-          执行
-        </div>
-      </Panel>
-      <PanelResizeHandle id="resize-handle" className="w-2 bg-gray-200" />
-      <Panel id="right-panel" className="h-screen">
-        <div
-          className="p-2 max-h-full overflow-y-auto"
-          style={{ fontSize: 16 }}
-        >
-          <div className="space-y-4">
-            {logs.map((content, i) => {
-              return (
-                <div key={i}>
-                  <pre>{content as string}</pre>
-                </div>
-              );
-            })}
+          <div className="fixed left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="w-[520px] h-[320px] p-4 overflow-y-auto rounded-md bg-white shadow-xl">
+              <pre>{errorText}</pre>
+            </div>
           </div>
         </div>
-      </Panel>
-    </PanelGroup>
+      ) : null}
+    </>
   );
 };
 

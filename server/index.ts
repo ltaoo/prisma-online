@@ -10,6 +10,8 @@ import { name, version } from "../package.json";
 import { load_file, flatten_mod, validate_prisma_client } from "./utils";
 import { PrismaClientTypeEntryName } from "./constants";
 
+// process.env.NODE_PATH = path.resolve(process.cwd(), "node_modules");
+
 program
   .name(name)
   .version(version)
@@ -26,7 +28,10 @@ function main() {
     return;
   }
   const app = express();
-  const PrismaClient = require("@prisma/client").PrismaClient;
+  const prisma_path = require.resolve("@prisma/client", {
+    paths: [process.cwd(), path.resolve(process.cwd(), "node_modules")],
+  });
+  const PrismaClient = require(prisma_path).PrismaClient;
   const client = (() => {
     if (!options.db) {
       return new PrismaClient();
@@ -58,7 +63,12 @@ function main() {
       code: 0,
       msg: "",
       data: {
-        files,
+        files: files.map(({ filepath, content }) => {
+          return {
+            filepath: filepath.replace(/^[-_/a-zA-Z]{1,}\/node_modules\//, ""),
+            content,
+          };
+        }),
       },
     });
   });
@@ -88,6 +98,14 @@ on_error(err);
 })();`,
       sandbox
     );
+    if (errors.length) {
+      res.json({
+        code: 401,
+        msg: errors.join("\n"),
+        data: null,
+      });
+      return;
+    }
     res.json({
       code: 0,
       msg: "",

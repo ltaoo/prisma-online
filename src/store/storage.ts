@@ -9,11 +9,18 @@ const DEFAULT_CACHE_VALUES = {
   settings: {
     vim: false,
   },
+  layout: [50, 50],
 };
 const key = "global";
 const e = globalThis.localStorage.getItem(key);
 export const storage = new StorageCore<typeof DEFAULT_CACHE_VALUES>({
   key,
-  values: e ? JSON.parse(e) : DEFAULT_CACHE_VALUES,
+  values: (() => {
+    const prev = e ? JSON.parse(e) : {};
+    return {
+      ...DEFAULT_CACHE_VALUES,
+      ...prev,
+    };
+  })(),
   client: globalThis.localStorage,
 });
