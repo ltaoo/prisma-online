@@ -11,6 +11,10 @@ import { load_file, flatten_mod, validate_prisma_client } from "./utils";
 import { PrismaClientTypeEntryName } from "./constants";
 
 // process.env.NODE_PATH = path.resolve(process.cwd(), "node_modules");
+// @ts-ignore
+BigInt.prototype.toJSON = function () {
+  return Number(this);
+};
 
 program
   .name(name)
